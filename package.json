@@ -1,0 +1,14 @@
+{
+    "name": "supportresistance",
+    "version": "1.0.0",
+    "description": "Calculos de niveles de soportes/resistencias para graficos chartistas https://github.com/pablob206/SupportResistance.git",
+    "main": "supportResistance.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "author": "Pablo Brocal <pablob206@hotmail.com>",
+    "license": "ISC",
+    "dependencies": {
+        "util": "^0.12.4"
+    }
+}

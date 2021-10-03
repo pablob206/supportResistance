@@ -1,0 +1,12 @@
+[calcSupportResistance]
+symbol = null
+inputSupportResistance = {
+    open : [],
+    close : [],
+    high : [],
+    low : [],
+    volume : []
+}
+backTesting = null
+clusterThreshold = 1
+
