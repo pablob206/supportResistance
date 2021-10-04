@@ -31,15 +31,15 @@ Pero para versiones subsiguientes debera suministrarlo ya que si seran tenidos e
     .....
 ```  
 
-### pivotPrice:
+#### pivotPrice: 
 Linea de soporte/resistencia.
 
-### limitsUp/limitsDown:
+#### limitsUp/limitsDown: 
 Zona de soporte/resistencia.
 
-### Score,puntuacion del soporte/resistencia: 
+#### Score, puntuacion del soporte/resistencia: 
 Si la puntuacion es alta significa que muchas velas han sido negociadas en esa zona, en cambio una puntuacion baja puede deberse a que no es una zona muy negociada o que pertenece a un maximo mayor o minimo menor (zonas muy importantes, pero no superadas en el corto plazo y de baja negociacion).
 
-### accumulatedVolume:
+#### accumulatedVolume:
 Volumen acumulado negociado en la zona consolidada entre limitsUp/limitsDown.
 
