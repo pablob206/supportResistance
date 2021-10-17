@@ -1,6 +1,6 @@
 /* ============================================================
  * Calculate Support-Resistance
- * https://github.com/pablob206/SupportResistance.git
+ * https://github.com/pablob206/supportResistance
  * ============================================================
  * Copyright 2021-, Pablo Brocal - pablob206@hotmail.com
  * Released under the MIT License
@@ -123,15 +123,15 @@ let supportResistance = {
         // console.log(util.inspect(clusters, { maxArrayLength: null }));
         return clusters;
     },
-    bestLine: (clusters, direction) => {
-        let lines = new Array;
+    recoveryLine: (clusters, direction) => {
         this.clusters = clusters;
         this.direction = direction;
+        let lines = new Array;
 
         this.clusters.map((currCluster, idxCluster, srcCluster) => {
             let line = new Object,
-                pivotPrice,
                 pivotLineIdx,
+                pivotPrice,
                 approach = 0,
                 limitsUp = 0,
                 limitsDown = 0,
@@ -139,26 +139,31 @@ let supportResistance = {
 
             currCluster.map((currDataLine, idxDataLine, srcDataLine) => {
                 let dataLine,
-                    currDataPriceLine,
-                    pivotPriceLine;
+                    currDataPriceLine;
 
                 if (this.direction == 'resistance') {
-                    dataLine = (srcDataLine[idxDataLine + 1] != undefined) ? srcDataLine[idxDataLine + 1].high : 0;
+                    dataLine = (srcDataLine[idxDataLine + 1] != undefined) ? srcDataLine[idxDataLine + 1].high : null;
                     currDataPriceLine = currDataLine.high;
-                    pivotPriceLine = currDataLine.high;
                 } else if (this.direction == 'support') {
-                    dataLine = (srcDataLine[idxDataLine + 1] != undefined) ? srcDataLine[idxDataLine + 1].low : 0;
+                    dataLine = (srcDataLine[idxDataLine + 1] != undefined) ? srcDataLine[idxDataLine + 1].low : null;
                     currDataPriceLine = currDataLine.low;
-                    pivotPriceLine = currDataLine.low;
                 };
 
                 limitsUp = (limitsUp == 0) ? currDataLine.high : limitsUp = (currDataLine.high >= limitsUp) ? currDataLine.high : limitsUp;
                 limitsDown = (limitsDown == 0) ? currDataLine.high : limitsDown = (currDataLine.high <= limitsDown) ? currDataLine.high : limitsDown;
 
-                let lastCurrValue = (srcDataLine[idxDataLine + 1] != undefined) ? dataLine : 0;
+                // if (currDataLine.open < currDataLine.close) { // vela verde
+                //     limitsUp = (limitsUp == 0) ? currDataLine.close : limitsUp = (currDataLine.close >= limitsUp) ? currDataLine.close : limitsUp;
+                //     limitsDown = (limitsDown == 0) ? currDataLine.open : limitsDown = (currDataLine.open <= limitsDown) ? currDataLine.open : limitsDown;
+                // } else if (currDataLine.open > currDataLine.close) { // vela roja
+                //     limitsUp = (limitsUp == 0) ? currDataLine.open : limitsUp = (currDataLine.open >= limitsUp) ? currDataLine.open : limitsUp;
+                //     limitsDown = (limitsDown == 0) ? currDataLine.close : limitsDown = (currDataLine.close <= limitsDown) ? currDataLine.close : limitsDown;
+                // };
+
+                let lastCurrValue = (srcDataLine[idxDataLine + 1] != undefined) ? dataLine : null;
 
                 if (currDataPriceLine >= lastCurrValue) {
-                    pivotPrice = pivotPriceLine;
+                    pivotPrice = currDataPriceLine;
                     pivotLineIdx = currDataLine.idx;
                 } else {
                     pivotPrice = lastCurrValue;
@@ -170,40 +175,42 @@ let supportResistance = {
             });
 
             line[`pivotPrice`] = pivotPrice;
-            line[`limitsUp`] = limitsUp;
-            line[`limitsDown`] = limitsDown;
-            line[`score`] = approach;
-            // line[`strength_1to10`] = 'coming soon..';
-            // line[`approach`] = approach;
+            line[`limitsUp`] = (limitsUp >= pivotPrice) ? limitsUp : pivotPrice;
+            line[`limitsDown`] = (limitsDown <= pivotPrice) ? limitsDown : pivotPrice;
+            line[`score`] = supportResistance.scoreOfLine(approach, pivotPrice, clusters[idxCluster]); // approach, allTime-H/L, setupCandl, volume, rsi.
             line[`accumulatedVolume`] = accumulatedVolume;
 
-            if (lines.findIndex(item => item.pivotPrice === line.pivotPrice) == -1) {
+            if (lines.findIndex(item => item.pivotPrice === line.pivotPrice) == -1) { // push
                 lines.push(line);
             } else {
-                let idx = lines.findIndex(item => item.pivotPrice === line.pivotPrice);
-
+                let idx = lines.findIndex(item => item.pivotPrice === line.pivotPrice); // update
                 if (lines[idx].score < line.score) {
                     lines[idx].limitsUp = line.limitsUp;
                     lines[idx].limitsDown = line.limitsDown;
+                    // lines[idx].score = supportResistance.scoreOfLine(approach); // approach, allTime-H/L, setupCandl, volume, rsi.
                     lines[idx].score = line.score;
-                    // lines[idx].strength_1to10 = 'coming soon..';
-                    // lines[idx].approach = line.approach;
-                    // lines[idx].volume = line.volume;
                     lines[idx].accumulatedVolume = line.accumulatedVolume;
                 };
+
             };
         });
 
-        // return lines.sort(utils.comparePivotPrice);
-        return lines;
+        return lines.sort(utils.comparePivotPrice);
     },
-    mergeBestLines: (src, threshold, totalLines) => {
-        this.src = src;
+    scoreOfLine: (approach, pivotPrice, src) => { // approach, allTime-H/L, setupCandl, volume, rsi.
+
+        return approach;
+    },
+    unify: (srcR, srcS, threshold, totalLines) => {
+        this.srcR = srcR;
+        this.srcS = srcS;
         this.threshold = threshold;
         this.totalLines = totalLines;
 
-        this.src.map((currSrc, idxSrc, src) => {
-            let line = new Object,
+        let src = this.srcR.concat(this.srcS).sort(utils.comparePivotPrice);
+
+        src.forEach((currSrc, idxSrc, src) => {
+            let line = {},
                 push = true,
                 idxUpdate;
 
@@ -212,8 +219,6 @@ let supportResistance = {
                 line[`limitsUp`] = currSrc.limitsUp;
                 line[`limitsDown`] = currSrc.limitsDown;
                 line[`score`] = currSrc.score;
-                // line[`strength_1to10`] = 'coming soon..';
-                // line[`approach`] = currSrc.approach;
                 line[`accumulatedVolume`] = currSrc.accumulatedVolume;
             } else {
                 this.totalLines.forEach((currTotalLines, idxTotalLines, srcTotalLines) => {
@@ -227,8 +232,6 @@ let supportResistance = {
                         line[`limitsUp`] = currSrc.limitsUp;
                         line[`limitsDown`] = currSrc.limitsDown;
                         line[`score`] = currSrc.score;
-                        // line[`strength_1to10`] = 'coming soon..';
-                        // line[`approach`] = currSrc.approach;
                         line[`accumulatedVolume`] = currSrc.accumulatedVolume;
                     };
                 });
@@ -241,13 +244,11 @@ let supportResistance = {
                 this.totalLines[idxUpdate].limitsUp = (currSrc.limitsUp >= this.totalLines[idxUpdate].limitsUp) ? currSrc.limitsUp : this.totalLines[idxUpdate].limitsUp;
                 this.totalLines[idxUpdate].limitsDown = (currSrc.limitsDown <= this.totalLines[idxUpdate].limitsDown) ? currSrc.limitsDown : this.totalLines[idxUpdate].limitsDown;
                 this.totalLines[idxUpdate].score += currSrc.score;
-                // this.totalLines[idxUpdate].strength_1to10 = 'coming soon..';
-                // this.totalLines[idxUpdate].approach += currSrc.approach;
                 this.totalLines[idxUpdate].accumulatedVolume += currSrc.accumulatedVolume;
             };
         });
 
-        return this.totalLines.sort(utils.comparePivotPrice);
+        return this.totalLines
     }
 
 };
@@ -293,14 +294,16 @@ const calcSupportResistance = (symbol, inputSupportResistance, backTesting = fal
         minPoint = supportResistance.calcMinPoints(this.inputSupportResistance),
         clustersR = supportResistance.clustering(maxPoint, this.clusterThreshold, 'resistance'),
         clustersS = supportResistance.clustering(minPoint, this.clusterThreshold, 'support'),
-        bestLinesR = supportResistance.bestLine(clustersR, 'resistance'),
-        bestLinesS = supportResistance.bestLine(clustersS, 'support');
+        recoveryLineR = supportResistance.recoveryLine(clustersR, 'resistance'),
+        recoveryLineS = supportResistance.recoveryLine(clustersS, 'support');
 
-    supportResistance.mergeBestLines(bestLinesR, this.clusterThreshold, totalLines);
-    supportResistance.mergeBestLines(bestLinesS, this.clusterThreshold, totalLines);
+    totalLines = supportResistance.unify(recoveryLineR, recoveryLineS, this.clusterThreshold, totalLines);
 
-    // console.log(util.inspect(totalLines, { maxArrayLength: null }));
-    // console.log(totalLines.length);
+    // console.log(util.inspect(recoveryLineR, { maxArrayLength: null }));
+    // console.log(recoveryLineR.length);
+    // console.log(util.inspect(recoveryLineS, { maxArrayLength: null }));
+    // console.log(recoveryLineS.length);
+    // console.log(`------------------------------------------------`);
 
     return totalLines;
 };
